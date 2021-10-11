@@ -1,0 +1,322 @@
+﻿@page "/institutions/{DataId:guid}"
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components
+@using GADB.Shared.Models
+@using Telerik.DataSource.Extensions
+@inject HttpClient _httpClient
+@inject NavigationManager _navManager;
+
+<h3>DataDetails</h3>
+
+@if (isLoading)
+{
+    @("Loading...")
+}
+else
+{
+    @if (SelectedData == null)
+    {
+        <TelerikDropDownList Width="100%"
+                             PopupHeight="auto"
+                             PopupClass="combobox-popout"
+                             Data="DocumentLists"
+                             TextField="@nameof(Documenttype.Name)"
+                             ValueField="@nameof(Documenttype.Id)"
+                             @bind-Value="DocumentId"
+                             OnChange="@SelectDocument" />
+    }
+    else
+    {
+        <EditForm Model="SelectedData" OnSubmit="@SaveDataEntry">
+            <div class="k-edit-form-container" style="width: 100%">
+                @foreach (var item in SelectedData.DataElements.OrderBy(s => s.Sort))
+
+                {
+                    <div class="k-edit-label">
+                        @item.Name
+                    </div>
+                    <div class="k-edit-field">
+                        @switch (item.Datatype)
+                        {
+                            case "Reference":
+                                if (item.ReferenceId != Guid.Empty)
+                                {
+                                    var reference = ReferenceList.Single(r => r.Id == item.ReferenceId);
+                                    var referenceValueList = JsonSerializer.Deserialize<IList<string>>(reference.Value); ;
+                                    <TelerikDropDownList Width="100%"
+                                                         PopupHeight="auto"
+                                                         PopupClass="combobox-popout"
+                                                         Data="referenceValueList"
+                                                         @bind-Value="item.Value" />
+                                }
+                                break;
+                            case "Boolean":
+                                var boolean = bool.Parse(item.Value);
+                                <TelerikCheckBox @bind-Value="@boolean" OnChange="@(obj => ChangeValue(obj, item))" />
+                                break;
+                            case "Date_Time":
+                                <TelerikDatePicker Value="@DateTime.Parse(item.Value)" OnChange="@(obj => ChangeValue(obj, item))" />
+                                break;
+                            case "Numericbox":
+                                var intValue = int.Parse(item.Value);
+                                <input type="number" value="@intValue" @onchange="@((obj) => ChangeValue(obj.Value, item))" max="9999" min="1000" />
+                                break;
+                            case "Date":
+                                <TelerikDatePicker Value="@DateTime.Parse(item.Value)" OnChange="@(obj => ChangeValue(obj, item))" />
+                                break;
+                            case "Textbox":
+                                <TelerikTextBox @bind-Value="item.Value" />
+                                break;
+                            case "Time":
+
+                                break;
+                        }
+                    </div>
+                }
+                <div class="k-edit-buttons" style="border: 0">
+                    <TelerikButton ButtonType="ButtonType.Submit" Icon="save">Save</TelerikButton>
+                    <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => _navManager.NavigateTo("institutions"))">Return</TelerikButton>
+                </div>
+            </div>
+        </EditForm>
+    }
+}
+
+@if (Locations != null && Locations.Any())
+{
+    if (HeadQuarter != null)
+    {
+        <h4>Head Quarter</h4>
+    }
+    else if (Subsidiaries != null)
+    {
+        <h4>Subsidiaries</h4>
+    }
+    else
+    {
+        <h4>Locations</h4>
+    }
+<TelerikGrid Data="Locations" EditMode="GridEditMode.Popup">
+    <GridColumns>
+        <GridColumn Title="Name">
+            <Template>
+                @{
+                    var entry = context as Data;
+                    var item = entry.DataElements.SingleOrDefault(d => d.Name == "Name");
+                    if (item != null)
+                    {
+                        @item.Value
+                    }
+                    else
+                    {
+                        @("---")
+                    }
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn Title="Objektklasse">
+            <Template>
+                @{
+                    var entry = context as Data;
+                    @entry.Doc.Name
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn Title="Strasse">
+            <Template>
+                @{
+                    var entry = context as Data;
+                    var item = entry.DataElements.SingleOrDefault(d => d.Name == "Strasse1");
+                    if (item != null)
+                    {
+                        @item.Value
+                    }
+                    else
+                    {
+                        @("---")
+                    }
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn Title="PLZ">
+            <Template>
+                @{
+                    var entry = context as Data;
+                    var item = entry.DataElements.SingleOrDefault(d => d.Name == "PLZ");
+                    if (item != null)
+                    {
+                        @item.Value
+                    }
+                    else
+                    {
+                        @("---")
+                    }
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn Title="Ort">
+            <Template>
+                @{
+                    var entry = context as Data;
+                    var item = entry.DataElements.SingleOrDefault(d => d.Name == "Ort");
+                    if (item != null)
+                    {
+                        @item.Value
+                    }
+                    else
+                    {
+                        @("---")
+                    }
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn>
+            <Template>
+                @{
+                    var item = context as Data;
+                    <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => _navManager.NavigateTo($"/institutions/{item.Id}"))" Icon="pencil">Edit</TelerikButton>
+                    <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => DeleteItem(item))" Icon="trash">Delete</TelerikButton>
+                }
+            </Template>
+        </GridColumn>
+    </GridColumns>
+</TelerikGrid>
+    <br/>
+}
+
+
+
+@code {
+    [Parameter]
+    public Guid DataId { get; set; }
+
+    private Data SelectedData { get; set; }
+    private IList<ReferenceValue> ReferenceList { get; set; }
+    private IList<Documenttype> DocumentLists { get; set; }
+    private Guid DocumentId { get; set; }
+    private IList<Data> Subsidiaries { get; set; }
+    private Data HeadQuarter { get; set; }
+    private IList<Data> Locations { get; set; }
+
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (DataId != Guid.Empty)
+        {
+            SelectedData = await _httpClient.GetFromJsonAsync<Data>($"api/data/{DataId}");
+            SetDataValue();
+            var isHeadQuarter = bool.Parse(SelectedData.DataElements.Single(h => h.Name == "Ist Hauptadresse").Value);
+            Locations = new List<Data>();
+            if (isHeadQuarter)
+            {
+                Subsidiaries = await _httpClient.GetFromJsonAsync<IList<Data>>($"api/data/subs/{DataId}");
+
+                Locations.AddRange(Subsidiaries);
+            }
+            else
+            {
+                HeadQuarter = await _httpClient.GetFromJsonAsync<Data>($"api/data/main/{DataId}");
+                Locations.Add(HeadQuarter);
+            }
+        }
+
+        DocumentLists = await _httpClient.GetFromJsonAsync<IList<Documenttype>>("api/document");
+        ReferenceList = await _httpClient.GetFromJsonAsync<IList<ReferenceValue>>("api/reference");
+        isLoading = false;
+    }
+
+    private void SelectDocument(object input)
+    {
+        var guidTest = Guid.Parse(input.ToString());
+        if (guidTest != DocumentId)
+        {
+            Console.WriteLine("IDs not equal");
+        }
+        var document = DocumentLists.Single(d => d.Id == DocumentId);
+
+        SelectedData = new Data()
+        {
+            DocId = DocumentId,
+            DataElements = document.DataElements,
+            Elements = document.Elements
+        };
+        SetDataValue();
+    }
+
+    private async Task SaveDataEntry()
+    {
+        SelectedData.Elements = JsonSerializer.Serialize(SelectedData.DataElements);
+        var response = await _httpClient.PostAsJsonAsync("api/data", SelectedData);
+        DocumentId = Guid.Empty;
+        SelectedData = null;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Change value  of process step element
+    /// </summary>
+    /// <param name="obj">Object of new value</param>
+    /// <param name="element">Process step element</param>
+    public void ChangeValue(object obj, DataElement item)
+    {
+        var value = obj.ToString();
+        item.Value = value;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Set element values
+    /// </summary>
+    private void SetDataValue()
+    {
+        if (SelectedData.DataElements != null)
+        {
+            foreach (var element in SelectedData.DataElements)
+            {
+                if (element.Datatype == "Date" || element.Datatype == "Date_Time")
+                {
+                    if (string.IsNullOrEmpty(element.Value))
+                    {
+                        element.Value = DateTime.Now.ToShortDateString();
+                    }
+                }
+                else if (element.Datatype == "Boolean")
+                {
+                    if (string.IsNullOrEmpty(element.Value))
+                    {
+                        element.Value = bool.FalseString;
+                    }
+                }
+                else if (element.Datatype == "Numericbox")
+                {
+                    if (string.IsNullOrEmpty(element.Value))
+                    {
+                        element.Value = "0";
+                    }
+                }
+                else if (element.Datatype == "Textbox")
+                {
+                    if (string.IsNullOrEmpty(element.Value))
+                    {
+                        element.Value = String.Empty;
+                    }
+                }
+                else if (element.Datatype == "Reference")
+                {
+
+                }
+            }
+        }
+    }
+
+    private async Task DeleteItem(Data item)
+    {
+        var response = await _httpClient.DeleteAsync($"api/data/{item.Id}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            Subsidiaries.Remove(item);
+        }
+    }
+}

@@ -1,0 +1,304 @@
+﻿@page "/documents"
+@using GADB.Shared.Models
+@using System.Text.Json
+@using System.Collections.ObjectModel
+@inject HttpClient _httpClient;
+<h3>Document</h3>
+
+@if (DataList != null)
+{
+    <TelerikGrid Data="DataList" EditMode="GridEditMode.Popup" Sortable="true">
+        <GridToolBar>
+            <GridCommandButton Icon="add" OnClick="@(() => SelectItem(null))">Create Item</GridCommandButton>
+        </GridToolBar>
+        <GridColumns>
+            <GridColumn Field="@nameof(Documenttype.Name)" />
+            <GridColumn Field="@nameof(Documenttype.Elements)" Editable="false" />
+            <GridColumn>
+                <Template>
+                    @{
+                            var item = context as Documenttype;
+                        <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => SelectItem(item))" Icon="pencil">Edit</TelerikButton>
+                        <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => DeleteItem(item))" Icon="trash">Delete</TelerikButton>
+                    }
+                </Template>
+            </GridColumn>
+        </GridColumns>
+    </TelerikGrid>
+}
+<TelerikWindow Modal="true" Size="WindowSize.Large" Visible="@(SelectedItem != null)" >
+    <WindowTitle>Edit Window</WindowTitle>
+    <WindowActions>
+        <WindowAction Name="Maximize" />
+        <WindowAction Name="Close" OnClick="@(() => SelectedItem = null)" />
+    </WindowActions>
+    <WindowContent>
+        <EditForm Model="SelectedItem" OnSubmit="@PostItem" >
+            <div class="k-edit-form-container" style="width: 100%; height: 90vh">
+                <div class="k-edit-label">
+                    Name
+                </div>
+                <div class="k-edit-field">
+                    <TelerikTextBox @bind-Value="SelectedItem.Name"></TelerikTextBox>
+                </div>
+                <div class="k-edit-label">
+                    Elements
+                </div>
+                <div class="k-edit-field" style="min-width: 500px">
+                    <div class="card" style="min-width: 500px">
+                        <div class="card-header" style="min-width: 500px">
+                            <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => SelectElement(null))">Add Element</TelerikButton>
+                        </div>
+                        <div class="k-card-body" style="min-width: 500px; ">
+                            @{
+                                if (!string.IsNullOrEmpty(SelectedItem.Elements))
+                                {
+                                    if (SelectedItem.DataElements.Any())
+                                    {
+                                        var firstElement = SelectedItem.DataElements.Single(x => x.Sort == SelectedItem.DataElements.Max(c => c.Sort));
+                                        var lastElement = SelectedItem.DataElements.Single(x => x.Sort == SelectedItem.DataElements.Min(c => c.Sort));
+                                        foreach (var control in SelectedItem.DataElements.OrderBy(x => x.Sort))
+                                        {
+                                            <div class="border shadow mb-1 bg-white rounded" style="width: 100%; float: left;">
+                                                <div class="p-3" style="width: 10%; float: left; min-width: 110px;">
+                                                    @if (control != firstElement)
+                                                    {
+                                                        <span class="k-icon k-i-chevron-down process-step-nav-icons" @onclick="@(() => MoveElement(control, "down"))"></span>
+                                                    }
+                                                    @if (control != lastElement)
+                                                    {
+                                                        <span class="k-icon k-i-chevron-up process-step-nav-icons" @onclick="@(() => MoveElement(control, "up"))"></span>
+                                                    }
+                                                </div>
+                                                <div class="p-3" style="padding-top: 5px; float: left; ">
+                                                    <span class="font-weight-bold align-middle">
+                                                        @control.Datatype: @control.Name
+                                                    </span>
+                                                </div>
+                                                <div class="p-3" style="white-space: nowrap; width: 10%; min-width: 100px; float: right">
+                                                    <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => SelectElement(control))">Edit</TelerikButton>
+                                                    <TelerikButton ButtonType="ButtonType.Button" OnClick="@((() => DeleteElement(control)))">Delete</TelerikButton>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="k-edit-buttons" style="border: 0">
+                    <TelerikButton ButtonType="ButtonType.Submit" Icon="save">Save</TelerikButton>
+                </div>
+            </div>
+        </EditForm>
+    </WindowContent>
+</TelerikWindow>
+
+@*PopOut for editing single item*@
+<TelerikWindow Visible="@(SelectedElement != null)" Modal="true" Width="800px">
+    <WindowTitle> Edit Elements </WindowTitle>
+    <WindowActions>
+        <WindowAction Name="Maximize"></WindowAction>
+        <WindowAction OnClick="@(() => SelectedElement = null)" Name="Close"></WindowAction>
+    </WindowActions>
+    <WindowContent>
+        <EditForm Model="@SelectedElement" OnSubmit="@SaveElement">
+            <div class="k-edit-form-container" style="width: 100%">
+
+                <div class="k-edit-label">
+                    Name
+                </div>
+                <div class="k-edit-field">
+                    <TelerikTextBox Id="textbox_en_element" @bind-Value="@SelectedElement.Name" />
+                </div>
+                
+                <div class="k-edit-label">
+                    Datentyp
+                </div>
+                <div class="k-edit-field">
+                    <TelerikDropDownList Width="100%"
+                                         PopupHeight="auto"
+                                         PopupClass="combobox-popout"
+                                         Data="@Datatypes"
+                                         TextField="@nameof(Datatype.Name)"
+                                         ValueField="@nameof(Datatype.Name)"
+                                         @bind-Value="SelectedElement.Datatype"
+                                         Id="dropdown_datentypen_element" />
+                </div>
+                @if (SelectedElement.Datatype == "Reference")
+                {
+                    <div class="k-edit-label">
+                        Id
+                    </div>
+                    <div class="k-edit-field">
+                        <TelerikDropDownList Width="100%"
+                                             PopupHeight="auto"
+                                             PopupClass="combobox-popout"
+                                             Data="References"
+                                             TextField="@nameof(ReferenceValue.Name)"
+                                             ValueField="@nameof(ReferenceValue.Id)"
+                                             @bind-Value="SelectedElement.ReferenceId"/>
+                    </div>
+                }
+
+                <div class="k-edit-buttons" style="border: 0">
+                    <TelerikButton ButtonType="ButtonType.Submit">Save</TelerikButton>
+                    <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => SelectedElement = null)">Close</TelerikButton>
+                </div>
+            </div>
+        </EditForm>
+    </WindowContent>
+</TelerikWindow>
+
+@code {
+    private ObservableCollection<Documenttype> DataList { get; set; }
+    //private ObservableCollection<DataElement> ElementCollection { get; set; } = new ObservableCollection<DataElement>();
+    private IList<Datatype> Datatypes { get; set; }
+    private IList<ReferenceValue> References { get; set; }
+    private Documenttype SelectedItem { get; set; }
+    private const string Route = "api/document";
+
+    private DataElement SelectedElement { get; set; }
+    //private DataElement DeletedElement { get; set; }
+    private bool _isNewElement;
+
+    protected override async Task OnInitializedAsync()
+    {
+        DataList = await _httpClient.GetFromJsonAsync<ObservableCollection<Documenttype>>("api/document");
+        Datatypes = await _httpClient.GetFromJsonAsync<IList<Datatype>>("api/datatype");
+        References = await _httpClient.GetFromJsonAsync<IList<ReferenceValue>>("api/reference");
+    }
+
+    private async Task SelectItem(Documenttype item)
+    {
+        if (item == null)
+        {
+            SelectedItem = new Documenttype();
+        }
+        else
+        {
+            SelectedItem = item;
+        }
+    }
+
+
+    private async Task DeleteItem(Documenttype item)
+    {
+        var response = await _httpClient.DeleteAsync($"{Route}/{item.Id}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            DataList.Remove(item);
+        }
+
+    }
+
+    private async Task PostItem()
+    {
+        var response = await _httpClient.PostAsJsonAsync<Documenttype>(Route, SelectedItem);
+        if (response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync();
+            DataList = JsonSerializer.Deserialize<ObservableCollection<Documenttype>>(content);
+
+        }
+        SelectedItem = null;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Move Prozessschrittelement up or down
+    /// </summary>
+    /// <param name="elementList"></param>
+    /// <param name="element"></param>
+    /// <param name="move"></param>
+    void MoveElement(DataElement element, string move)
+    {
+        if (move == "up")
+        {
+            var nextElement = SelectedItem.DataElements.Single(e => e.Sort == (element.Sort - 10));
+            nextElement.Sort = element.Sort;
+            element.Sort = element.Sort - 10;
+        }
+
+        if (move == "down")
+        {
+            var lastElement = SelectedItem.DataElements.Single(e => e.Sort == (element.Sort + 10));
+            lastElement.Sort = element.Sort;
+            element.Sort = element.Sort + 10;
+        }
+        SelectedItem.DataElements = new List<DataElement>(SelectedItem.DataElements.OrderBy(x => x.Sort));
+        string json = JsonSerializer.Serialize(SelectedItem.DataElements, typeof(IList<DataElement>), new JsonSerializerOptions() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All) });
+        SelectedItem.Elements = $"{json}";
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Select element to edit
+    /// </summary>
+    /// <param name="element"></param>
+    void SelectElement(DataElement element)
+    {
+        if (element == null)
+        {
+            SelectedElement = new DataElement();
+            _isNewElement = true;
+        }
+        else
+        {
+            SelectedElement = element;
+            _isNewElement = false;
+        }
+    }
+
+    /// <summary>
+    /// Delete Documenttype out of Collection
+    /// </summary>
+    /// <param name="element"></param>
+    void DeleteElement(DataElement element)
+    {
+        SelectedItem.DataElements.Remove(element);
+        SelectedItem.Elements = JsonSerializer.Serialize(SelectedItem.DataElements);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Save element to collection
+    /// </summary>
+    void SaveElement()
+    {
+        if (_isNewElement)
+        {
+            if (string.IsNullOrEmpty(SelectedItem.Elements))
+            {
+                SelectedElement.Sort = 10;
+                string json = JsonSerializer.Serialize(SelectedElement, typeof(DataElement), new JsonSerializerOptions() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All) });
+                SelectedItem.DataElements = new List<DataElement>();
+                SelectedItem.DataElements.Add(SelectedElement);
+                SelectedItem.Elements = $"[{json}]";
+            }
+            else
+            {
+                SelectedElement.Sort = (SelectedItem.DataElements.Count + 1) * 10;
+                SelectedItem.DataElements.Add(SelectedElement);
+                SelectedItem.DataElements = new List<DataElement>(SelectedItem.DataElements.OrderBy(x => x.Sort));
+                string json = JsonSerializer.Serialize(SelectedItem.DataElements, typeof(IList<DataElement>), new JsonSerializerOptions() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All) });
+                SelectedItem.Elements = $"{json}";
+            }
+        }
+        else
+        {
+            string json = JsonSerializer.Serialize(SelectedItem.DataElements, typeof(IList<DataElement>), new JsonSerializerOptions() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All) });
+            SelectedItem.Elements = $"{json}";
+        }
+
+        SelectedElement = null;
+    }
+}
+
+<style>
+    div.k-widget.k-window.k-window-wrapper.telerik-blazor.k-centered.k-window-lg { /* targets the entire popup element */
+        height: 90vh;
+    }
+</style>

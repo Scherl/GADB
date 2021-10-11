@@ -1,0 +1,120 @@
+﻿@page "/institutions"
+@using GADB.Shared.Models
+@using System.Text.Json
+@using System.Collections.ObjectModel
+@using System.Linq
+@using System.Threading.Tasks
+@using System
+@using System.Collections.Generic
+@inject HttpClient _httpClient;
+@inject NavigationManager _navManager;
+
+<h3>Institutionen</h3>
+
+<TelerikGrid Data="DataList" EditMode="GridEditMode.Popup">
+    <GridToolBar>
+        <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => _navManager.NavigateTo($"/institutions/{Guid.Empty}"))">Create</TelerikButton>
+    </GridToolBar>
+    <GridColumns>
+        <GridColumn Title="Name">
+            <Template>
+                @{
+                    var entry = context as Data;
+                    var item = entry.DataElements.SingleOrDefault(d => d.Name == "Name");
+                    if (item != null)
+                    {
+                        @item.Value
+                    }
+                    else
+                    {
+                        @("---")
+                    }
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn Title="Objektklasse">
+            <Template>
+                @{
+                    var entry = context as Data;
+                    @entry.Doc.Name
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn Title="Strasse">
+            <Template>
+                @{
+                    var entry = context as Data;
+                    var item = entry.DataElements.SingleOrDefault(d => d.Name == "Strasse1");
+                    if (item != null)
+                    {
+                        @item.Value
+                    }
+                    else
+                    {
+                        @("---")
+                    }
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn Title="PLZ">
+            <Template>
+                @{
+                    var entry = context as Data;
+                    var item = entry.DataElements.SingleOrDefault(d => d.Name == "PLZ");
+                    if (item != null)
+                    {
+                        @item.Value
+                    }
+                    else
+                    {
+                        @("---")
+                    }
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn Title="Ort">
+            <Template>
+                @{
+                    var entry = context as Data;
+                    var item = entry.DataElements.SingleOrDefault(d => d.Name == "Ort");
+                    if (item != null)
+                    {
+                        @item.Value
+                    }
+                    else
+                    {
+                        @("---")
+                    }
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn>
+            <Template>
+                @{
+                    var item = context as Data;
+                     <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => _navManager.NavigateTo($"/institutions/{item.Id}"))" Icon="pencil">Edit</TelerikButton>
+                     <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => DeleteItem(item))" Icon="trash">Delete</TelerikButton>
+                }
+            </Template>
+        </GridColumn>
+    </GridColumns>
+</TelerikGrid>
+
+@code {
+    private ObservableCollection<Data> DataList { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        DataList = await _httpClient.GetFromJsonAsync<ObservableCollection<Data>>("api/data");
+    }
+
+    private async Task DeleteItem(Data item)
+    {
+        var response = await _httpClient.DeleteAsync($"api/data/{item.Id}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            DataList.Remove(item);
+        }
+    }
+}
