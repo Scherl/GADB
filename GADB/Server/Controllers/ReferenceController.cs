@@ -54,5 +54,22 @@ namespace GADB.Server.Controllers
 
             return await GetAll();
         }
+
+        // DELETE api/<ReferenceController>
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteByID ( Guid id)
+        {
+            try
+            {
+                var itemRef = await _context.TreferenceValue.FindAsync(id);
+                _context.TreferenceValue.Remove(itemRef);
+                await _context.SaveChangesAsync();
+                return Ok("Value list " + itemRef.Name + " deleted.");
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
     }
 }

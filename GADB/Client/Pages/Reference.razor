@@ -13,66 +13,69 @@
 
     @foreach (var data in DataList)
     {
-        <button type="button" class="btn btn-secondary btn-lg" style="margin-left: 3px;" @onclick="@(() => SelectItem(data))">@data.Name</button>
+        <button type="button" class="btn btn-secondary btn-sm" style="margin-left: 3px;" @onclick="@(() => SelectItem(data))">@data.Name</button>
     }
+
+
+
     <br />
 
 }
 
-<button type="button" class="btn btn-primary btn-lg" style="margin-left: 3px; margin-top: 10px" @onclick="@(() => SelectItem(null))">Create new list</button>
+<button type="button" class="btn btn-primary btn-sm" style="margin-left: 3px; margin-top: 10px" @onclick="@(() => SelectItem(null))">Create new list</button>
 
 @if (SelectedItem != null)
 {
 
     if (!changeName)
     {
-        @if (SelectedItem.Id != Guid.Empty)
-        {
-            <h4 style="margin-top: 20px">@SelectedItem.Name </h4>
-        }
-        else
-        {
-            <h4 style="margin-top: 20px">@SelectedItem.Name</h4>
-        }
+
+        <h4 style="margin-top: 20px">@SelectedItem.Name </h4>
+
+        <TelerikButton @onclick="@(() => changeName = !changeName)">Change name of default value list</TelerikButton>
     }
     else
-    {
-        <TelerikTextBox @bind-Value="SelectedItem.Name" OnChange="@PostItem" />
-    }
+    { <h4 style="margin-top: 20px">@SelectedItem.Name</h4>
+    <TelerikTextBox @bind-Value="SelectedItem.Name" />
+    <br />
+    <TelerikButton  @onclick="@PostItem">Save</TelerikButton>
+}
 
-    <button class="btn btn-outline-secondary btn-sm" style="margin-bottom: 10px;" @onclick="@(() => changeName = !changeName)">Change name of default value list</button>
-  //TODO: delete list button
 
-    <TelerikGrid Data="SelectedItemValues" Sortable="true">
-        <GridToolBar>
-            <GridCommandButton Icon="add" OnClick="CreateNewEntry">Create new default value list</GridCommandButton>
-        </GridToolBar>
-        <GridColumns>
-            <GridColumn>
-                <HeaderTemplate>
-                    @SelectedItem.Name
-                </HeaderTemplate>
-                <Template>
-                    @{
-                            var value = context as String;
-                        @value
-                    }
-                </Template>
-                <EditorTemplate>
-                    @{
-                            var value = context as String;
-                        <TelerikTextBox @bind-Value="UpdatedValue" />
-                    }
-                </EditorTemplate>
-            </GridColumn>
-            <GridCommandColumn>
-                <GridCommandButton Command="Edit" Icon="edit">Edit</GridCommandButton>
-                <GridCommandButton Command="Save" Icon="save" ShowInEdit="true" OnClick="@SaveItem">Update</GridCommandButton>
-                <GridCommandButton Command="Cancel" Icon="cancel" ShowInEdit="true">Cancel</GridCommandButton>
-                <GridCommandButton Command="Delete" Icon="delete" ShowInEdit="false" OnClick="@DeleteItem">Delete</GridCommandButton>
-            </GridCommandColumn>
-        </GridColumns>
-    </TelerikGrid>
+<TelerikButton Primary="true" @onclick="@(()=> DeleteValueList(SelectedItem))">Delete @SelectedItem.Name</TelerikButton>
+<br />
+<br />
+
+<TelerikGrid Data="SelectedItemValues" Sortable="true">
+    <GridToolBar>
+        <GridCommandButton Icon="add" OnClick="CreateNewEntry">Create new entry</GridCommandButton>
+    </GridToolBar>
+    <GridColumns>
+        <GridColumn>
+            <HeaderTemplate>
+                @SelectedItem.Name
+            </HeaderTemplate>
+            <Template>
+                @{
+                        var value = context as String;
+                    @value
+                }
+            </Template>
+            <EditorTemplate>
+                @{
+                        var value = context as String;
+                    <TelerikTextBox @bind-Value="UpdatedValue" />
+                }
+            </EditorTemplate>
+        </GridColumn>
+        <GridCommandColumn>
+            <GridCommandButton Command="Edit" Icon="edit">Edit</GridCommandButton>
+            <GridCommandButton Command="Save" Icon="save" ShowInEdit="true" OnClick="@SaveItem">Update</GridCommandButton>
+            <GridCommandButton Command="Cancel" Icon="cancel" ShowInEdit="true">Cancel</GridCommandButton>
+            <GridCommandButton Command="Delete" Icon="delete" ShowInEdit="false" OnClick="@DeleteItem">Delete</GridCommandButton>
+        </GridCommandColumn>
+    </GridColumns>
+</TelerikGrid>
 }
 
 @code {
@@ -81,6 +84,7 @@
     private ObservableCollection<string> SelectedItemValues { get; set; }
 
     private string UpdatedValue { get; set; } = string.Empty;
+    private string ReferenceID { get; set; }
     private bool changeName;
 
     protected override async Task OnInitializedAsync()
@@ -109,7 +113,7 @@
         StateHasChanged();
     }
 
-  //TODO: implement delete list function
+
 
     private async Task SaveItem(GridCommandEventArgs e)
     {
@@ -135,6 +139,19 @@
             var content = await response.Content.ReadAsStringAsync();
             DataList = JsonSerializer.Deserialize<ObservableCollection<ReferenceValue>>(content);
             changeName = false;
+        }
+        StateHasChanged();
+    }
+
+    private async Task DeleteValueList(ReferenceValue SelectedItem)
+    {
+        var response = await _httpClient.DeleteAsync($"api/reference/{SelectedItem.Id}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            DataList.Remove(SelectedItem);
+            SelectedItem = null;
+
         }
         StateHasChanged();
     }
