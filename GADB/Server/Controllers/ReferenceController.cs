@@ -1,12 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AutoMapper;
+﻿using AutoMapper;
 using GADB.Server.Models.DB;
 using GADB.Shared.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Linq;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -39,25 +39,38 @@ namespace GADB.Server.Controllers
         public async Task<IActionResult> Post(ReferenceValue item)
         {
             var tItem = _mapper.Map<TreferenceValue>(item);
-            if (tItem.Id == Guid.Empty)
+            var checkUniqueName = await _context.TreferenceValue.FirstOrDefaultAsync(d => d.Name.Equals(tItem.Name));
+
+            if (checkUniqueName == null)
             {
-                // new item
-                tItem.Id = Guid.NewGuid();
-                _context.TreferenceValue.Add(tItem);
-                await _context.SaveChangesAsync();
+                
+
+                if (tItem.Id == Guid.Empty)
+                {
+                    // create new item
+                    tItem.Id = Guid.NewGuid();
+                    _context.TreferenceValue.Add(tItem);
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    _context.Update(tItem);
+                    await _context.SaveChangesAsync();
+                }
+
+                return await GetAll();
             }
             else
             {
-                _context.Update(tItem);
-                await _context.SaveChangesAsync();
+                return BadRequest("Name already used. Please choose different list name.");
             }
 
-            return await GetAll();
+
         }
 
         // DELETE api/<ReferenceController>
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteByID ( Guid id)
+        public async Task<IActionResult> DeleteByID(Guid id)
         {
             try
             {

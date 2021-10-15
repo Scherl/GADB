@@ -1,13 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using GADB.Server.Interfaces;
+using GADB.Server.Models.DB;
+using GADB.Shared.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using AutoMapper;
-using GADB.Server.Models.DB;
-using GADB.Shared.Models;
-using Microsoft.EntityFrameworkCore;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -19,11 +20,13 @@ namespace GADB.Server.Controllers
     {
         public readonly GADBContext _context;
         public readonly IMapper _mapper;
+        public readonly IDataService _dataService;
 
-        public DataController(GADBContext context, IMapper mapper)
+        public DataController(GADBContext context, IMapper mapper, IDataService dataService)
         {
             _context = context;
             _mapper = mapper;
+            _dataService = dataService;
         }
 
         // GET: api/<DataController>
@@ -66,7 +69,7 @@ namespace GADB.Server.Controllers
             var name = item.DataElements.Single(n => n.Name == "Name");
             var isNotHQ = "\"Name\":\"Ist Hauptadresse\",\"Datatype\":\"Boolean\",\"ReferenceId\":null,\"Value\":\"False\"";
 
-            var tList = await _context.Tdata.Where(d => d.Elements.Contains(name.Value) && d.Elements.Contains(isNotHQ) && d.Id!=id).Include(x => x.Doc).ToListAsync();
+            var tList = await _context.Tdata.Where(d => d.Elements.Contains(name.Value) && d.Elements.Contains(isNotHQ) && d.Id != id).Include(x => x.Doc).ToListAsync();
             var list = _mapper.Map<IList<Data>>(tList);
 
             foreach (var entry in list)
@@ -82,28 +85,11 @@ namespace GADB.Server.Controllers
             return Ok(list);
         }
 
-        //Get HQ
+        //Get HQ by id 
         [HttpGet("main/{id}")]
         public async Task<IActionResult> GetHQ(Guid id)
         {
-            var tItem = await _context.Tdata.FindAsync(id);
-            var item = _mapper.Map<Data>(tItem);
-            item.DataElements = new List<DataElement>(JsonSerializer.Deserialize<IList<DataElement>>(item.Elements));
-            var name = item.DataElements.Single(n => n.Name == "Name");
-            var isHQ = "\"Name\":\"Ist Hauptadresse\",\"Datatype\":\"Boolean\",\"ReferenceId\":null,\"Value\":\"True\"";
-
-            var tItemData =  await _context.Tdata.Include(x => x.Doc).SingleAsync(d => d.Elements.Contains(name.Value) && d.Elements.Contains(isHQ) && d.Id != id);
-            var itemData = _mapper.Map<Data>(tItemData);
-
-                if (!string.IsNullOrEmpty(itemData.Elements))
-                {
-                    itemData.DataElements =
-                        new List<DataElement>(JsonSerializer.Deserialize<IList<DataElement>>(itemData.Elements));
-                }
-            
-
-
-            return Ok(itemData);
+            return Ok(_dataService.GetHQ(id));
         }
 
         // POST api/<DataController>

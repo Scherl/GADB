@@ -16,13 +16,12 @@
         <button type="button" class="btn btn-secondary btn-sm" style="margin-left: 3px;" @onclick="@(() => SelectItem(data))">@data.Name</button>
     }
 
-
-
-    <br />
+        <br />
 
 }
+    
+    <button type="button" class="btn btn-primary btn-sm" style="margin-left: 3px; margin-top: 10px" @onclick="@(() => SelectItem(null))">Create new list</button>
 
-<button type="button" class="btn btn-primary btn-sm" style="margin-left: 3px; margin-top: 10px" @onclick="@(() => SelectItem(null))">Create new list</button>
 
 @if (SelectedItem != null)
 {
@@ -33,16 +32,21 @@
         <h4 style="margin-top: 20px">@SelectedItem.Name </h4>
 
         <TelerikButton @onclick="@(() => changeName = !changeName)">Change name of default value list</TelerikButton>
+        <TelerikButton Primary="true" @onclick="@(() => { DeleteValueList(SelectedItem); SelectedItem = null; })">Delete @SelectedItem.Name</TelerikButton>
     }
     else
     { <h4 style="margin-top: 20px">@SelectedItem.Name</h4>
+
     <TelerikTextBox @bind-Value="SelectedItem.Name" />
     <br />
-    <TelerikButton  @onclick="@PostItem">Save</TelerikButton>
+
+    // Save new list name with empty guid
+    <TelerikButton @onclick="@PostItem">Save</TelerikButton>
+    <TelerikNotification @ref="@NotificationReference" Class="TelerikNotification"></TelerikNotification>
 }
 
 
-<TelerikButton Primary="true" @onclick="@(()=> DeleteValueList(SelectedItem))">Delete @SelectedItem.Name</TelerikButton>
+
 <br />
 <br />
 
@@ -83,6 +87,8 @@
     private ReferenceValue SelectedItem { get; set; }
     private ObservableCollection<string> SelectedItemValues { get; set; }
 
+    public TelerikNotification NotificationReference { get; set; }
+
     private string UpdatedValue { get; set; } = string.Empty;
     private string ReferenceID { get; set; }
     private bool changeName;
@@ -121,6 +127,7 @@
         SelectedItemValues.Remove(changedValue);
         SelectedItemValues.Add(UpdatedValue);
         await PostItem();
+
     }
 
     private async Task DeleteItem(GridCommandEventArgs e)
@@ -140,6 +147,14 @@
             DataList = JsonSerializer.Deserialize<ObservableCollection<ReferenceValue>>(content);
             changeName = false;
         }
+        else
+        {
+            NotificationReference.Show(new NotificationModel()
+            {
+                ThemeColor = ThemeColors.Error,
+                Text = await response.Content.ReadAsStringAsync(),
+            });
+        }
         StateHasChanged();
     }
 
@@ -150,9 +165,18 @@
         if (response.IsSuccessStatusCode)
         {
             DataList.Remove(SelectedItem);
-            SelectedItem = null;
+
 
         }
         StateHasChanged();
     }
 }
+<style>
+    .TelerikNotification .k-notification-container .k-notification-wrap {
+        width: 500px;
+        height: 30px;
+        font-size: 1.0em;
+        text-align: center;
+        align-items: center;
+    }
+</style>

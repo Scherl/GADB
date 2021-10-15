@@ -10,6 +10,8 @@ using System.Reflection;
 using System.Text.Json;
 using GADB.Server.Models.DB;
 using Microsoft.EntityFrameworkCore;
+using GADB.Server.Services;
+using GADB.Server.Interfaces;
 
 namespace GADB.Server
 {
@@ -31,6 +33,7 @@ namespace GADB.Server
             services.AddControllersWithViews();
             services.AddRazorPages();
             services.AddAutoMapper(typeof(Startup));
+            services.AddScoped<IDataService, DataService>();
 
             // Set JsonSerializationOption PropertyNameCaseInsensitive to true
             ((JsonSerializerOptions)typeof(JsonSerializerOptions)
