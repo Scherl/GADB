@@ -23,7 +23,8 @@
                     var item = entry.DataElements.SingleOrDefault(d => d.Name == "Name");
                     if (item != null)
                     {
-                        @item.Value
+                        
+                                <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => _navManager.NavigateTo($"/institutions/{entry.Id}"))">@item.Value</TelerikButton>
                     }
                     else
                     {
@@ -105,6 +106,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Get all HQ entries 
         DataList = await _httpClient.GetFromJsonAsync<ObservableCollection<Data>>("api/data");
     }
 

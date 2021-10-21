@@ -8,11 +8,18 @@ namespace GADB.Server.Interfaces
 {
     public interface IDataService
     {
+
         /// <summary>
-        /// Get HQ entity if entiy is marked as HQ
+        /// Get HQ entity by ID
         /// </summary>
         /// <param name="id"></param>
-        /// <returns></returns>
-        Task<Data> GetHQ(Guid id);
+        /// <returns>object</returns>
+        /// 
+
+        // TODO: add interface
+    
+
+
+      
     }
 }

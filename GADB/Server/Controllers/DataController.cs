@@ -52,6 +52,8 @@ namespace GADB.Server.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
+
+
             var tItem = await _context.Tdata.FindAsync(id);
             var item = _mapper.Map<Data>(tItem);
             item.DataElements = new List<DataElement>(JsonSerializer.Deserialize<IList<DataElement>>(item.Elements));
@@ -81,7 +83,6 @@ namespace GADB.Server.Controllers
                 }
             }
 
-
             return Ok(list);
         }
 
@@ -89,7 +90,22 @@ namespace GADB.Server.Controllers
         [HttpGet("main/{id}")]
         public async Task<IActionResult> GetHQ(Guid id)
         {
-            return Ok(_dataService.GetHQ(id));
+            var tItem = await _context.Tdata.FindAsync(id);
+            var item = _mapper.Map<Data>(tItem);
+            item.DataElements = new List<DataElement>(JsonSerializer.Deserialize<IList<DataElement>>(item.Elements));
+            var name = item.DataElements.Single(n => n.Name == "Name");
+            var isHQ = "\"Name\":\"Ist Hauptadresse\",\"Datatype\":\"Boolean\",\"ReferenceId\":null,\"Value\":\"True\"";
+
+            var tItemData = await _context.Tdata.Include(x => x.Doc).SingleAsync(d => d.Elements.Contains(name.Value) && d.Elements.Contains(isHQ) && d.Id != id);
+            var itemData = _mapper.Map<Data>(tItemData);
+
+            if (!string.IsNullOrEmpty(itemData.Elements))
+            {
+                itemData.DataElements =
+                    new List<DataElement>(JsonSerializer.Deserialize<IList<DataElement>>(itemData.Elements));
+            }
+
+            return Ok(itemData);
         }
 
         // POST api/<DataController>

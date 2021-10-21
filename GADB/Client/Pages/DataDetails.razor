@@ -8,8 +8,11 @@
 
 <h3>DataDetails</h3>
 
+<TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => _navManager.NavigateTo($"/institutions/"))" Icon="arrow-left">Back</TelerikButton>
+
 @if (isLoading)
 {
+    <br />
     @("Loading...")
 }
 else
@@ -96,92 +99,92 @@ else
     {
         <h4>Locations</h4>
     }
-<TelerikGrid Data="Locations" EditMode="GridEditMode.Popup">
-    <GridColumns>
-        <GridColumn Title="Name">
-            <Template>
-                @{
-                    var entry = context as Data;
-                    var item = entry.DataElements.SingleOrDefault(d => d.Name == "Name");
-                    if (item != null)
-                    {
-                        @item.Value
+    <TelerikGrid Data="Locations" EditMode="GridEditMode.Popup">
+        <GridColumns>
+            <GridColumn Title="Name">
+                <Template>
+                    @{
+                        var entry = context as Data;
+                        var item = entry.DataElements.SingleOrDefault(d => d.Name == "Name");
+                        if (item != null)
+                        {   <p @onclick="@(() => _navManager.NavigateTo($"/institutions/{entry.Id}", true))">@item.Value</p>
+
+                        }
+                        else
+                        {
+                            @("---")
+                        }
                     }
-                    else
-                    {
-                        @("---")
+                </Template>
+            </GridColumn>
+            <GridColumn Title="Objektklasse">
+                <Template>
+                    @{
+                        var entry = context as Data;
+                        @entry.Doc.Name
                     }
-                }
-            </Template>
-        </GridColumn>
-        <GridColumn Title="Objektklasse">
-            <Template>
-                @{
-                    var entry = context as Data;
-                    @entry.Doc.Name
-                }
-            </Template>
-        </GridColumn>
-        <GridColumn Title="Strasse">
-            <Template>
-                @{
-                    var entry = context as Data;
-                    var item = entry.DataElements.SingleOrDefault(d => d.Name == "Strasse1");
-                    if (item != null)
-                    {
-                        @item.Value
+                </Template>
+            </GridColumn>
+            <GridColumn Title="Strasse">
+                <Template>
+                    @{
+                        var entry = context as Data;
+                        var item = entry.DataElements.SingleOrDefault(d => d.Name == "Strasse1");
+                        if (item != null)
+                        {
+                            @item.Value
+                        }
+                        else
+                        {
+                            @("---")
+                        }
                     }
-                    else
-                    {
-                        @("---")
+                </Template>
+            </GridColumn>
+            <GridColumn Title="PLZ">
+                <Template>
+                    @{
+                        var entry = context as Data;
+                        var item = entry.DataElements.SingleOrDefault(d => d.Name == "PLZ");
+                        if (item != null)
+                        {
+                            @item.Value
+                        }
+                        else
+                        {
+                            @("---")
+                        }
                     }
-                }
-            </Template>
-        </GridColumn>
-        <GridColumn Title="PLZ">
-            <Template>
-                @{
-                    var entry = context as Data;
-                    var item = entry.DataElements.SingleOrDefault(d => d.Name == "PLZ");
-                    if (item != null)
-                    {
-                        @item.Value
+                </Template>
+            </GridColumn>
+            <GridColumn Title="Ort">
+                <Template>
+                    @{
+                        var entry = context as Data;
+                        var item = entry.DataElements.SingleOrDefault(d => d.Name == "Ort");
+                        if (item != null)
+                        {
+                            @item.Value
+                        }
+                        else
+                        {
+                            @("---")
+                        }
                     }
-                    else
-                    {
-                        @("---")
+                </Template>
+            </GridColumn>
+            <GridColumn>
+                <Template>
+                    @{
+                        var item = context as Data;
+                        <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => _navManager.NavigateTo($"/institutions/{entry.Id}", true))" Icon="pencil">Edit</TelerikButton>
+                        <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => DeleteItem(item))" Icon="trash">Delete</TelerikButton>
                     }
-                }
-            </Template>
-        </GridColumn>
-        <GridColumn Title="Ort">
-            <Template>
-                @{
-                    var entry = context as Data;
-                    var item = entry.DataElements.SingleOrDefault(d => d.Name == "Ort");
-                    if (item != null)
-                    {
-                        @item.Value
-                    }
-                    else
-                    {
-                        @("---")
-                    }
-                }
-            </Template>
-        </GridColumn>
-        <GridColumn>
-            <Template>
-                @{
-                    var item = context as Data;
-                    <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => _navManager.NavigateTo($"/institutions/{item.Id}"))" Icon="pencil">Edit</TelerikButton>
-                    <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => DeleteItem(item))" Icon="trash">Delete</TelerikButton>
-                }
-            </Template>
-        </GridColumn>
-    </GridColumns>
-</TelerikGrid>
-    <br/>
+                </Template>
+            </GridColumn>
+        </GridColumns>
+    </TelerikGrid>
+    <br />
 }
 
 
@@ -224,6 +227,7 @@ else
         DocumentLists = await _httpClient.GetFromJsonAsync<IList<Documenttype>>("api/document");
         ReferenceList = await _httpClient.GetFromJsonAsync<IList<ReferenceValue>>("api/reference");
         isLoading = false;
+        StateHasChanged();
     }
 
     private void SelectDocument(object input)
