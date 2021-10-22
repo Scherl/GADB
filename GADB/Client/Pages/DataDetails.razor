@@ -177,7 +177,7 @@ else
                 <Template>
                     @{
                         var item = context as Data;
-                        <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => _navManager.NavigateTo($"/institutions/{entry.Id}", true))" Icon="pencil">Edit</TelerikButton>
+                        <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => _navManager.NavigateTo($"/institutions/{item.Id}", true))" Icon="pencil">Edit</TelerikButton>
                         <TelerikButton ButtonType="ButtonType.Button" OnClick="@(() => DeleteItem(item))" Icon="trash">Delete</TelerikButton>
                     }
                 </Template>
